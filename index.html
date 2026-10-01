@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musor Drop — Часть 1</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #2c3e50;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+        #game-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background: linear-gradient(to bottom, #111d27, #243b55);
+            border: 4px solid #34495e;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        /* Интерфейс счета и жизней */
+        #ui {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .ui-element {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        canvas {
+            display: block;
+            background: transparent;
+        }
+        /* Игровые экраны */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(17, 29, 39, 0.95);
+            z-index: 20;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #2ecc71;
+            text-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+        }
+        p {
+            font-size: 16px;
+            color: #bdc3c7;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        button {
+            padding: 12px 35px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #2ecc71;
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+            transition: transform 0.1s, background 0.2s;
+        }
+        button:hover {
+            background: #27ae60;
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .hidden {
+            display: none !important;
+        }
+        .legend {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 25px;
+            width: 100%;
+        }
+        .legend-item {
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- UI Панель -->
+    <div id="ui">
+        <div class="ui-element">Счет: <span id="score-val">0</span></div>
+        <div class="ui-element" style="color: #e74c3c;">Жизни: <span id="lives-val">3</span></div>
+    </div>
+
+    <!-- Главное меню -->
+    <div id="start-screen" class="screen">
+        <h1>MUSOR DROP</h1>
+        <p>Лови падающий мусор подходящим по цвету баком! Используй стрелки ← → или нажимай по краям экрана.</p>
+        
+        <div class="legend">
+            <div class="legend-item" style="background: #3498db; color: white;">Синий<br>Пластик</div>
+            <div class="legend-item" style="background: #f1c40f; color: #111;">Желтый<br>Бумага</div>
+            <div class="legend-item" style="background: #2ecc71; color: white;">Зеленый<br>Органика</div>
+        </div>
+        
+        <button id="start-btn">ИГРАТЬ</button>
+    </div>
+
+    <!-- Экран Проигрыша -->
+    <div id="game-over-screen" class="screen hidden">
+        <h1 style="color: #e74c3c;">ИГРА ОКОНЧЕНА</h1>
+        <p>Вы пропустили слишком много мусора или отсортировали его неверно.</p>
+        <div class="ui-element" style="font-size: 22px; margin-bottom: 30px;">Итоговый счет: <span id="final-score">0</span></div>
+        <button id="restart-btn">ИГРАТЬ СНОВА</button>
+    </div>
+
+    <!-- Холст для отрисовки графики -->
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+          </div>
+          <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Находим элементы интерфейса в DOM
+    const startScreen = document.getElementById('start-screen');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const startBtn = document.getElementById('start-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    const scoreVal = document.getElementById('score-val');
+    const livesVal = document.getElementById('lives-val');
+    const finalScore = document.getElementById('final-score');
+
+    // Базовые настройки типов отходов и эмодзи
+    const TRASH_TYPES = [
+        { name: 'Пластик', color: '#3498db', category: 'plastic', items: ['🍾', '🛍️', '🥤'] },
+        { name: 'Бумага', color: '#f1c40f', category: 'paper', items: ['📦', '📰', '✉️'] },
+        { name: 'Органика', color: '#2ecc71', category: 'organic', items: ['🍏', '🍌', '🍕'] }
+    ];
+
+    // Динамические переменные состояния игры
+    let score = 0;
+    let lives = 3;
+    let isGameRunning = false;
+    let trashArray = [];
+    let lastSpawnTime = 0;
+    let spawnInterval = 1200; // задержка между спавном в мс
+    let gameSpeed = 3;
+
+    // Параметры мусорного бака игрока
+    const binWidth = 90;
+    const binHeight = 45;
+    let playerBin = {
+        x: canvas.width / 2 - binWidth / 2,
+        y: canvas.height - binHeight - 20,
+        typeIndex: 0, // Какую категорию собираем в данный момент
+        speed: 7
+    };
+
+    // Флаги зажатых клавиш для плавного перемещения
+    let keys = { ArrowLeft: false, ArrowRight: false };
+
+    // Привязка кликов к кнопкам меню
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+
+    // Слушатели клавиатуры (ПК)
+    document.addEventListener('keydown', (e) => {
+        if (e.key in keys) keys[e.key] = true;
+    });
+    
+    document.addEventListener('keyup', (e) => {
+        if (e.key in keys) keys[e.key] = false;
+        
+        // Смена типа бака на Пробел или Стрелку вверх
+        if(e.key === ' ' || e.key === 'ArrowUp') {
+            cycleBinType();
+        }
+    });
+
+    // Мобильное управление (Тапы по краям экрана)
+    canvas.addEventListener('touchstart', (e) => {
+        if (!isGameRunning) return;
+        const touchX = e.touches[0].clientX - canvas.getBoundingClientRect().left;
+        if (touchX < canvas.width / 2) {
+            keys.ArrowLeft = true;
+        } else {
+            keys.ArrowRight = true;
+        }
+    });
+    
+    canvas.addEventListener('touchend', () => {
+        keys.ArrowLeft = false;
+        keys.ArrowRight = false;
+    });
+
+    // Клик мышкой/тап по самому баку тоже меняет его тип
+    canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        
+        if (clickY > playerBin.y - 20) {
+            cycleBinType();
+        }
+    });
+
+    // Функция переключения цвета/типа бака по кругу
+    function cycleBinType() {
+        playerBin.typeIndex = (playerBin.typeIndex + 1) % TRASH_TYPES.length;
+    }
+                // Функция запуска новой игры
+    function startGame() {
+        score = 0;
+        lives = 3;
+        gameSpeed = 3.5;
+        spawnInterval = 1300;
+        trashArray = [];
+        playerBin.x = canvas.width / 2 - binWidth / 2;
+        playerBin.typeIndex = 0;
+        
+        scoreVal.textContent = score;
+        livesVal.textContent = lives;
+
+        startScreen.classList.add('hidden');
+        gameOverScreen.classList.add('hidden');
+        
+        isGameRunning = true;
+        lastSpawnTime = performance.now();
+        
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Функция завершения игры
+    function gameOver() {
+        isGameRunning = false;
+        finalScore.textContent = score;
+        gameOverScreen.classList.remove('hidden');
+    }
+
+    // Спавн случайного предмета
+    function spawnTrash() {
+        const randomTypeIndex = Math.floor(Math.random() * TRASH_TYPES.length);
+        const type = TRASH_TYPES[randomTypeIndex];
+        const emoji = type.items[Math.floor(Math.random() * type.items.length)];
+        
+        const radius = 20;
+        // Случайная позиция по X с учетом границ холста
+        const x = Math.random() * (canvas.width - radius * 2) + radius;
+
+        trashArray.push({
+            x: x,
+            y: -radius,
+            radius: radius,
+            color: type.color,
+            category: type.category,
+            emoji: emoji,
+            speed: gameSpeed + Math.random() * 1 // Разброс скорости для естественности
+        });
+    }
+
+    // Главный игровой цикл (60 кадров в секунду)
+    function gameLoop(currentTime) {
+        if (!isGameRunning) return;
+
+        // Очищаем экран перед каждым новым кадром
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. Логика спавна предметов по времени
+        if (currentTime - lastSpawnTime > spawnInterval) {
+            spawnTrash();
+            lastSpawnTime = currentTime;
+            
+            // Постепенное усложнение игры (уменьшаем интервал и наращиваем скорость)
+            if (spawnInterval > 600) spawnInterval -= 15;
+            gameSpeed += 0.05;
+        }
+
+        // 2. Движение бака игрока вправо/влево
+        if (keys.ArrowLeft && playerBin.x > 0) {
+            playerBin.x -= playerBin.speed;
+        }
+        if (keys.ArrowRight && playerBin.x < canvas.width - binWidth) {
+            playerBin.x += playerBin.speed;
+        }
+
+        // 3. Отрисовка бака игрока
+        const currentType = TRASH_TYPES[playerBin.typeIndex];
+        
+        // Эффект тени бака
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.fillRect(playerBin.x + 5, playerBin.y + 5, binWidth, binHeight);
+        
+        // Прямоугольник бака со скругленными углами
+        ctx.fillStyle = currentType.color;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+            ctx.roundRect(playerBin.x, playerBin.y, binWidth, binHeight, 8);
+        } else {
+            ctx.rect(playerBin.x, playerBin.y, binWidth, binHeight);
+        }
+        ctx.fill();
+        
+        // Верхний белый ободок бака
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(playerBin.x, playerBin.y, binWidth, 6);
+
+        // Текст названия категории на баке
+        ctx.fillStyle = playerBin.typeIndex === 1 ? '#111' : '#fff'; // Черный текст на желтом баке
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(currentType.name.toUpperCase(), playerBin.x + binWidth / 2, playerBin.y + 28);
+
+        // 4. Логика и отрисовка падающего мусора
+        for (let i = trashArray.length - 1; i >= 0; i--) {
+            let trash = trashArray[i];
+            trash.y += trash.speed;
+
+            // Отрисовка эмодзи-мусора
+            ctx.font = '30px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(trash.emoji, trash.x, trash.y);
+
+            // Проверка попадания в область бака
+            const hitX = trash.x >= playerBin.x && trash.x <= playerBin.x + binWidth;
+            const hitY = trash.y + trash.radius >= playerBin.y && trash.y - trash.radius <= playerBin.y + binHeight;
+
+            if (hitX && hitY) {
+                // Если тип мусора совпал с текущим типом бака
+                if (trash.category === currentType.category) {
+                    score += 10;
+                    scoreVal.textContent = score;
+                } else {
+                    // Ошибка — не тот бак
+                    lives--;
+                    livesVal.textContent = lives;
+                    triggerFlash();
+                }
+                trashArray.splice(i, 1);
+                if (lives <= 0) gameOver();
+                continue;
+            }
+
+            // Если мусор пролетел мимо бака и упал на дно
+            if (trash.y - trash.radius > canvas.height) {
+                lives--;
+                livesVal.textContent = lives;
+                trashArray.splice(i, 1);
+                triggerFlash();
+                if (lives <= 0) gameOver();
+            }
+        }
+
+        // Повторяем цикл на следующем кадре
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Красная вспышка фона при потере жизни
+    function triggerFlash() {
+        canvas.style.backgroundColor = 'rgba(231, 76, 60, 0.3)';
+        setTimeout(() => {
+            canvas.style.backgroundColor = 'transparent';
+        }, 150);
+    }
+</script>
+</body>
+</html>
