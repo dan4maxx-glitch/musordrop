@@ -3,400 +3,319 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Musor Drop — Часть 1</title>
+    <title>MUSOR DROP - Симулятор Кейсов</title>
     <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-        }
-        body {
-            margin: 0;
-            padding: 0;
-            background: #2c3e50;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            color: #fff;
-            overflow: hidden;
-        }
-        #game-container {
-            position: relative;
-            width: 400px;
-            height: 600px;
-            background: linear-gradient(to bottom, #111d27, #243b55);
-            border: 4px solid #34495e;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        /* Интерфейс счета и жизней */
-        #ui {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            right: 15px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 18px;
-            font-weight: bold;
-            z-index: 10;
-            pointer-events: none;
-        }
-        .ui-element {
-            background: rgba(0, 0, 0, 0.6);
-            padding: 5px 12px;
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        canvas {
-            display: block;
-            background: transparent;
-        }
-        /* Игровые экраны */
-        .screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: rgba(17, 29, 39, 0.95);
-            z-index: 20;
-            text-align: center;
-            padding: 20px;
-        }
-        h1 {
-            font-size: 32px;
-            margin-bottom: 10px;
-            color: #2ecc71;
-            text-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
-        }
-        p {
-            font-size: 16px;
-            color: #bdc3c7;
-            margin-bottom: 30px;
-            line-height: 1.5;
-        }
-        button {
-            padding: 12px 35px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            background: #2ecc71;
-            color: #fff;
-            border: none;
-            border-radius: 25px;
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
-            transition: transform 0.1s, background 0.2s;
-        }
-        button:hover {
-            background: #27ae60;
-        }
-        button:active {
-            transform: scale(0.95);
-        }
-        .hidden {
-            display: none !important;
-        }
-        .legend {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 25px;
-            width: 100%;
-        }
-        .legend-item {
-            padding: 8px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: bold;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial', sans-serif; user-select: none; }
+        body { background: #12131a; color: #fff; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
+        /* Шапка с балансом */
+        .header { display: flex; justify-content: space-between; width: 100%; max-width: 800px; background: #1a1c24; padding: 15px 20px; border-radius: 10px; border: 1px solid #2d313f; margin-bottom: 20px; align-items: center; }
+        .logo { font-size: 24px; font-weight: bold; color: #ff3e3e; text-shadow: 0 0 10px rgba(255,62,62,0.3); }
+        .balance { font-size: 20px; font-weight: bold; color: #ffd700; }
+
+        /* Игровая зона */
+        .main-container { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 800px; }
+        
+        /* Кнопка-Кликер */
+        .clicker-box { background: #1a1c24; border: 1px solid #2d313f; border-radius: 10px; padding: 20px; text-align: center; }
+        .click-btn { background: linear-gradient(135deg, #2b3040, #1e222e); border: 2px solid #3b4256; color: #fff; padding: 15px 40px; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.1s; width: 100%; max-width: 300px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .click-btn:active { transform: scale(0.96); background: #222634; }
+
+        /* Выбор Кейсов */
+        .cases-section { background: #1a1c24; border: 1px solid #2d313f; border-radius: 10px; padding: 20px; }
+        .section-title { font-size: 18px; margin-bottom: 15px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .cases-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .case-card { background: #222530; border: 1px solid #323746; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .case-card:hover { border-color: #ff3e3e; transform: translateY(-2px); }
+        .case-name { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
+        .case-price { color: #ffd700; font-weight: bold; font-size: 14px; }
+
+        /* РУЛЕТКА (Анимация открытия) */
+        .roulette-wrapper { background: #1a1c24; border: 1px solid #2d313f; border-radius: 10px; padding: 25px 20px; position: relative; overflow: hidden; display: none; }
+        .roulette-container { position: relative; width: 100%; height: 130px; overflow: hidden; background: #0f1015; border-radius: 6px; border: 1px solid #252833; }
+        .roulette-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; background: #ff3e3e; z-index: 10; transform: translateX(-20%); box-shadow: 0 0 10px #ff3e3e; }
+        .roulette-track { display: flex; position: absolute; left: 0; top: 10px; height: 110px; transition: transform 4s cubic-bezier(0.1, 0.6, 0.1, 1); will-change: transform; }
+        
+        /* Элементы внутри рулетки */
+        .skin-card { width: 110px; height: 110px; background: #1c1e24; margin-right: 6px; flex-shrink: 0; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 5px; font-size: 11px; border-bottom: 4px solid #fff; font-weight: bold; }
+        .skin-img { font-size: 32px; margin-bottom: 5px; }
+        .skin-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 12px; height: 24px; color: #e1e1e1; }
+
+        /* Редкости скинов */
+        .rarity-consumer { border-bottom-color: #b0c3d9; }
+        .rarity-milspec { border-bottom-color: #4b69ff; }
+        .rarity-classified { border-bottom-color: #d32ce6; }
+        .rarity-covert { border-bottom-color: #eb4b4b; }
+        .rarity-gold { border-bottom-color: #e4ae39; }
+
+        /* Кнопки управления кейсом */
+        .roulette-controls { display: flex; justify-content: center; margin-top: 15px; }
+        
+        /* ИНВЕНТАРЬ */
+        .inventory-section { background: #1a1c24; border: 1px solid #2d313f; border-radius: 10px; padding: 20px; min-height: 150px; }
+        .inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+        .inv-card { background: #222530; border-radius: 6px; padding: 10px; text-align: center; font-size: 11px; position: relative; border-bottom: 3px solid #fff; cursor: pointer; transition: 0.1s; }
+        .inv-card:hover { transform: scale(1.03); background: #292d3b; }
+        .inv-card .sell-price { color: #ffd700; font-weight: bold; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <!-- UI Панель -->
-    <div id="ui">
-        <div class="ui-element">Счет: <span id="score-val">0</span></div>
-        <div class="ui-element" style="color: #e74c3c;">Жизни: <span id="lives-val">3</span></div>
+    <!-- Шапка игры -->
+    <div class="header">
+        <div class="logo">🗑️ MUSOR DROP</div>
+        <div class="balance">Баланс: <span id="balance-val">100</span> 🪙</div>
     </div>
 
-    <!-- Главное меню -->
-    <div id="start-screen" class="screen">
-        <h1>MUSOR DROP</h1>
-        <p>Лови падающий мусор подходящим по цвету баком! Используй стрелки ← → или нажимай по краям экрана.</p>
-        
-        <div class="legend">
-            <div class="legend-item" style="background: #3498db; color: white;">Синий<br>Пластик</div>
-            <div class="legend-item" style="background: #f1c40f; color: #111;">Желтый<br>Бумага</div>
-            <div class="legend-item" style="background: #2ecc71; color: white;">Зеленый<br>Органика</div>
+    <div class="main-container">
+        <!-- Фарм валюты (Кликер) -->
+        <div class="clicker-box">
+            <button class="click-btn" id="clicker-btn">ПОШУРШАТЬ В БАКЕ (+5 🪙)</button>
         </div>
+
+        <!-- Рулетка (Скрыта, пока не откроют кейс) -->
+        <div class="roulette-wrapper" id="roulette-block">
+            <div class="section-title" id="current-case-title">Открытие кейса</div>
+            <div class="roulette-container">
+                <div class="roulette-line"></div>
+                <div class="roulette-track" id="roulette-track"></div>
+            </div>
+            <div class="roulette-controls">
+                <button class="click-btn" id="close-roulette-btn" style="display:none; background:#aa2222; border-color:#cc3333;">ЗАКРЫТЬ</button>
+            </div>
+        </div>
+
+        <!-- Список кейсов -->
+        <div class="cases-section">
+            <div class="section-title">Доступные Мусорки</div>
+            <div class="cases-grid" id="cases-grid"></div>
+        </div>
+
+        <!-- Инвентарь игрока -->
+        <div class="inventory-section">
+            <div class="section-title">Ваш инвентарь (Клик для продажи)</div>
+            <div class="inventory-grid" id="inventory-grid"></div>
+        </div>
+    </div>
+    <script>
+    // Массив всех предметов, которые могут выпасть
+    const SKINS_DB = [
+        // Ширпотреб (Consumer)
+        { id: 1, name: 'Сломанная бутылка', emoji: '🍾', price: 2, rarity: 'consumer' },
+        { id: 2, name: 'Ржавая консервная банка', emoji: '🥫', price: 5, rarity: 'consumer' },
+        { id: 3, name: 'Старый носок', emoji: '🧦', price: 8, rarity: 'consumer' },
         
-        <button id="start-btn">ИГРАТЬ</button>
-    </div>
-
-    <!-- Экран Проигрыша -->
-    <div id="game-over-screen" class="screen hidden">
-        <h1 style="color: #e74c3c;">ИГРА ОКОНЧЕНА</h1>
-        <p>Вы пропустили слишком много мусора или отсортировали его неверно.</p>
-        <div class="ui-element" style="font-size: 22px; margin-bottom: 30px;">Итоговый счет: <span id="final-score">0</span></div>
-        <button id="restart-btn">ИГРАТЬ СНОВА</button>
-    </div>
-
-    <!-- Холст для отрисовки графики -->
-    <canvas id="gameCanvas" width="400" height="600"></canvas>
-          </div>
-          <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-
-    // Находим элементы интерфейса в DOM
-    const startScreen = document.getElementById('start-screen');
-    const gameOverScreen = document.getElementById('game-over-screen');
-    const startBtn = document.getElementById('start-btn');
-    const restartBtn = document.getElementById('restart-btn');
-    const scoreVal = document.getElementById('score-val');
-    const livesVal = document.getElementById('lives-val');
-    const finalScore = document.getElementById('final-score');
-
-    // Базовые настройки типов отходов и эмодзи
-    const TRASH_TYPES = [
-        { name: 'Пластик', color: '#3498db', category: 'plastic', items: ['🍾', '🛍️', '🥤'] },
-        { name: 'Бумага', color: '#f1c40f', category: 'paper', items: ['📦', '📰', '✉️'] },
-        { name: 'Органика', color: '#2ecc71', category: 'organic', items: ['🍏', '🍌', '🍕'] }
+        // Армейское качество (Mil-spec)
+        { id: 4, name: 'Поношенный Глок | Газета', emoji: '🔫', price: 25, rarity: 'milspec' },
+        { id: 5, name: 'USP-S | Картон', emoji: '🔫', price: 40, rarity: 'milspec' },
+        { id: 6, name: 'Дигл | Плесневелый сыр', emoji: '🔫', price: 65, rarity: 'milspec' },
+        
+        // Засекреченное (Classified)
+        { id: 7, name: 'AK-47 | Изолента', emoji: '💥', price: 150, rarity: 'classified' },
+        { id: 8, name: 'M4A4 | Ржавый гвоздь', emoji: '💥', price: 210, rarity: 'classified' },
+        
+        // Тайное (Covert)
+        { id: 9, name: 'AWP | Свалка радиоактивных отходов', emoji: '🦖', price: 650, rarity: 'covert' },
+        { id: 10, name: 'M4A1-S | Золотая кожура', emoji: '🍌', price: 800, rarity: 'covert' },
+        
+        // Особо редкое (Gold)
+        { id: 11, name: 'Керамбит | Ржавый кусок арматуры', emoji: '🔪', price: 2500, rarity: 'gold' },
+        { id: 12, name: 'Мотоциклетные перчатки | Грязные тряпки', emoji: '🧤', price: 1800, rarity: 'gold' }
     ];
 
-    // Динамические переменные состояния игры
-    let score = 0;
-    let lives = 3;
-    let isGameRunning = false;
-    let trashArray = [];
-    let lastSpawnTime = 0;
-    let spawnInterval = 1200; // задержка между спавном в мс
-    let gameSpeed = 3;
-
-    // Параметры мусорного бака игрока
-    const binWidth = 90;
-    const binHeight = 45;
-    let playerBin = {
-        x: canvas.width / 2 - binWidth / 2,
-        y: canvas.height - binHeight - 20,
-        typeIndex: 0, // Какую категорию собираем в данный момент
-        speed: 7
-    };
-
-    // Флаги зажатых клавиш для плавного перемещения
-    let keys = { ArrowLeft: false, ArrowRight: false };
-
-    // Привязка кликов к кнопкам меню
-    startBtn.addEventListener('click', startGame);
-    restartBtn.addEventListener('click', startGame);
-
-    // Слушатели клавиатуры (ПК)
-    document.addEventListener('keydown', (e) => {
-        if (e.key in keys) keys[e.key] = true;
-    });
-    
-    document.addEventListener('keyup', (e) => {
-        if (e.key in keys) keys[e.key] = false;
-        
-        // Смена типа бака на Пробел или Стрелку вверх
-        if(e.key === ' ' || e.key === 'ArrowUp') {
-            cycleBinType();
+    // Настройки кейсов
+    const CASES = [
+        {
+            id: 'eco_bin',
+            name: 'Обычный бак',
+            price: 30,
+            // Доступные ID предметов в этом кейсе
+            items: [1, 2, 3, 4, 5]
+        },
+        {
+            id: 'elite_dumpster',
+            name: 'Элитная помойка',
+            price: 150,
+            items: [4, 5, 6, 7, 8]
+        },
+        {
+            id: 'secret_landfill',
+            name: 'Тайный полигон',
+            price: 500,
+            items: [7, 8, 9, 10, 11, 12]
         }
-    });
+    ];
 
-    // Мобильное управление (Тапы по краям экрана)
-    canvas.addEventListener('touchstart', (e) => {
-        if (!isGameRunning) return;
-        const touchX = e.touches[0].clientX - canvas.getBoundingClientRect().left;
-        if (touchX < canvas.width / 2) {
-            keys.ArrowLeft = true;
-        } else {
-            keys.ArrowRight = true;
-        }
-    });
-    
-    canvas.addEventListener('touchend', () => {
-        keys.ArrowLeft = false;
-        keys.ArrowRight = false;
-    });
+    // Глобальное состояние игры
+    let balance = 100;
+    let inventory = [];
+    let isRolling = false;
 
-    // Клик мышкой/тап по самому баку тоже меняет его тип
-    canvas.addEventListener('mousedown', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const clickY = e.clientY - rect.top;
-        
-        if (clickY > playerBin.y - 20) {
-            cycleBinType();
-        }
-    });
+    // DOM Элементы
+    const balanceVal = document.getElementById('balance-val');
+    const clickerBtn = document.getElementById('clicker-btn');
+    const casesGrid = document.getElementById('cases-grid');
+    const inventoryGrid = document.getElementById('inventory-grid');
+    const rouletteBlock = document.getElementById('roulette-block');
+    const rouletteTrack = document.getElementById('roulette-track');
+    const closeRouletteBtn = document.getElementById('close-roulette-btn');
+    const currentCaseTitle = document.getElementById('current-case-title');
 
-    // Функция переключения цвета/типа бака по кругу
-    function cycleBinType() {
-        playerBin.typeIndex = (playerBin.typeIndex + 1) % TRASH_TYPES.length;
-    }
-                // Функция запуска новой игры
-    function startGame() {
-        score = 0;
-        lives = 3;
-        gameSpeed = 3.5;
-        spawnInterval = 1300;
-        trashArray = [];
-        playerBin.x = canvas.width / 2 - binWidth / 2;
-        playerBin.typeIndex = 0;
-        
-        scoreVal.textContent = score;
-        livesVal.textContent = lives;
-
-        startScreen.classList.add('hidden');
-        gameOverScreen.classList.add('hidden');
-        
-        isGameRunning = true;
-        lastSpawnTime = performance.now();
-        
-        requestAnimationFrame(gameLoop);
+    // Инициализация интерфейса
+    function init() {
+        updateBalanceDisplay();
+        renderCases();
+        renderInventory();
     }
 
-    // Функция завершения игры
-    function gameOver() {
-        isGameRunning = false;
-        finalScore.textContent = score;
-        gameOverScreen.classList.remove('hidden');
+    // Обновление баланса на экране
+    function updateBalanceDisplay() {
+        balanceVal.textContent = balance;
     }
 
-    // Спавн случайного предмета
-    function spawnTrash() {
-        const randomTypeIndex = Math.floor(Math.random() * TRASH_TYPES.length);
-        const type = TRASH_TYPES[randomTypeIndex];
-        const emoji = type.items[Math.floor(Math.random() * type.items.length)];
+    // Клик по тапалке
+    clickerBtn.addEventListener('click', () => {
+        if (isRolling) return; // Нельзя тапать во время прокрутки рулетки
+        balance += 5;
+        updateBalanceDisplay();
         
-        const radius = 20;
-        // Случайная позиция по X с учетом границ холста
-        const x = Math.random() * (canvas.width - radius * 2) + radius;
+        // Небольшой визуальный эффект клика
+        clickerBtn.style.transform = 'scale(0.98)';
+        setTimeout(() => clickerBtn.style.transform = 'none', 50);
+    });
 
-        trashArray.push({
-            x: x,
-            y: -radius,
-            radius: radius,
-            color: type.color,
-            category: type.category,
-            emoji: emoji,
-            speed: gameSpeed + Math.random() * 1 // Разброс скорости для естественности
+    // Отрисовка списка доступных кейсов
+    function renderCases() {
+        casesGrid.innerHTML = '';
+        CASES.forEach(c => {
+            const card = document.createElement('div');
+            card.className = 'case-card';
+            card.innerHTML = `
+                <div style="font-size: 40px; margin-bottom: 10px;">🗑️</div>
+                <div class="case-name">${c.name}</div>
+                <div class="case-price">${c.price} 🪙</div>
+            `;
+            card.addEventListener('click', () => openCase(c.id));
+            casesGrid.appendChild(card);
+        });
+    }
+    // Отрисовка инвентаря игрока
+    function renderInventory() {
+        inventoryGrid.innerHTML = '';
+        if (inventory.length === 0) {
+            inventoryGrid.innerHTML = '<div style="color: #666; font-style: italic; grid-column: 1/-1;">Здесь будут ваши скины...</div>';
+            return;
+        }
+        
+        inventory.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.className = `inv-card rarity-${item.rarity}`;
+            card.innerHTML = `
+                <div style="font-size: 24px; margin-bottom: 5px;">${item.emoji}</div>
+                <div style="font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.name}</div>
+                <div class="sell-price">+${item.price} 🪙</div>
+            `;
+            // Продажа предмета при клике
+            card.addEventListener('click', () => sellItem(index));
+            inventoryGrid.appendChild(card);
         });
     }
 
-    // Главный игровой цикл (60 кадров в секунду)
-    function gameLoop(currentTime) {
-        if (!isGameRunning) return;
-
-        // Очищаем экран перед каждым новым кадром
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // 1. Логика спавна предметов по времени
-        if (currentTime - lastSpawnTime > spawnInterval) {
-            spawnTrash();
-            lastSpawnTime = currentTime;
-            
-            // Постепенное усложнение игры (уменьшаем интервал и наращиваем скорость)
-            if (spawnInterval > 600) spawnInterval -= 15;
-            gameSpeed += 0.05;
-        }
-
-        // 2. Движение бака игрока вправо/влево
-        if (keys.ArrowLeft && playerBin.x > 0) {
-            playerBin.x -= playerBin.speed;
-        }
-        if (keys.ArrowRight && playerBin.x < canvas.width - binWidth) {
-            playerBin.x += playerBin.speed;
-        }
-
-        // 3. Отрисовка бака игрока
-        const currentType = TRASH_TYPES[playerBin.typeIndex];
-        
-        // Эффект тени бака
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        ctx.fillRect(playerBin.x + 5, playerBin.y + 5, binWidth, binHeight);
-        
-        // Прямоугольник бака со скругленными углами
-        ctx.fillStyle = currentType.color;
-        ctx.beginPath();
-        if (ctx.roundRect) {
-            ctx.roundRect(playerBin.x, playerBin.y, binWidth, binHeight, 8);
-        } else {
-            ctx.rect(playerBin.x, playerBin.y, binWidth, binHeight);
-        }
-        ctx.fill();
-        
-        // Верхний белый ободок бака
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(playerBin.x, playerBin.y, binWidth, 6);
-
-        // Текст названия категории на баке
-        ctx.fillStyle = playerBin.typeIndex === 1 ? '#111' : '#fff'; // Черный текст на желтом баке
-        ctx.font = 'bold 12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(currentType.name.toUpperCase(), playerBin.x + binWidth / 2, playerBin.y + 28);
-
-        // 4. Логика и отрисовка падающего мусора
-        for (let i = trashArray.length - 1; i >= 0; i--) {
-            let trash = trashArray[i];
-            trash.y += trash.speed;
-
-            // Отрисовка эмодзи-мусора
-            ctx.font = '30px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(trash.emoji, trash.x, trash.y);
-
-            // Проверка попадания в область бака
-            const hitX = trash.x >= playerBin.x && trash.x <= playerBin.x + binWidth;
-            const hitY = trash.y + trash.radius >= playerBin.y && trash.y - trash.radius <= playerBin.y + binHeight;
-
-            if (hitX && hitY) {
-                // Если тип мусора совпал с текущим типом бака
-                if (trash.category === currentType.category) {
-                    score += 10;
-                    scoreVal.textContent = score;
-                } else {
-                    // Ошибка — не тот бак
-                    lives--;
-                    livesVal.textContent = lives;
-                    triggerFlash();
-                }
-                trashArray.splice(i, 1);
-                if (lives <= 0) gameOver();
-                continue;
-            }
-
-            // Если мусор пролетел мимо бака и упал на дно
-            if (trash.y - trash.radius > canvas.height) {
-                lives--;
-                livesVal.textContent = lives;
-                trashArray.splice(i, 1);
-                triggerFlash();
-                if (lives <= 0) gameOver();
-            }
-        }
-
-        // Повторяем цикл на следующем кадре
-        requestAnimationFrame(gameLoop);
+    // Логика продажи предмета
+    function sellItem(index) {
+        if (isRolling) return; // Нельзя продавать во время анимации рулетки
+        const item = inventory[index];
+        balance += item.price;
+        inventory.splice(index, 1);
+        updateBalanceDisplay();
+        renderInventory();
     }
 
-    // Красная вспышка фона при потере жизни
-    function triggerFlash() {
-        canvas.style.backgroundColor = 'rgba(231, 76, 60, 0.3)';
+    // Запуск процесса открытия кейса
+    function openCase(caseId) {
+        if (isRolling) return;
+        
+        const targetCase = CASES.find(c => c.id === caseId);
+        if (!targetCase) return;
+
+        // Проверка баланса
+        if (balance < targetCase.price) {
+            alert('Недостаточно монет! Пошуршите в баке 🪙');
+            return;
+        }
+
+        // Списываем стоимость кейса
+        balance -= targetCase.price;
+        updateBalanceDisplay();
+        isRolling = true;
+
+        // Показываем блок рулетки и прячем кнопку закрытия
+        rouletteBlock.style.display = 'block';
+        closeRouletteBtn.style.display = 'none';
+        currentCaseTitle.textContent = `Открытие: ${targetCase.name}`;
+
+        // Генерируем массив предметов для ленты рулетки (всего около 30 штук для иллюзии прокрутки)
+        const totalItemsInTrack = 30;
+        const trackItems = [];
+        
+        // Заполняем ленту случайными предметами, доступными в этом кейсе
+        for (let i = 0; i < totalItemsInTrack; i++) {
+            const randomSkinId = targetCase.items[Math.floor(Math.random() * targetCase.items.length)];
+            const skin = SKINS_DB.find(s => s.id === randomSkinId);
+            trackItems.push(skin);
+        }
+
+        // Предмет на 26-й позиции станет финальным выигрышем
+        const winningIndex = 25; 
+        const winningSkin = trackItems[winningIndex];
+
+        // Очищаем и строим трек рулетки визуально
+        rouletteTrack.innerHTML = '';
+        rouletteTrack.style.transition = 'none';
+        rouletteTrack.style.transform = 'translateX(0px)';
+
+        trackItems.forEach(item => {
+            const el = document.createElement('div');
+            el.className = `skin-card rarity-${item.rarity}`;
+            el.innerHTML = `
+                <div class="skin-img">${item.emoji}</div>
+                <div class="skin-title">${item.name}</div>
+            `;
+            rouletteTrack.appendChild(el);
+        });
+
+        // Форсируем перерисовку браузером, чтобы сбросить анимацию
+        rouletteTrack.offsetHeight;
+
+        // Вычисляем точную позицию смещения (ширина карточки 110px + отступ 6px)
+        const cardWidth = 116; 
+        // Центрируем выигрышную карточку относительно красной линии (середины контейнера рулетки)
+        const containerWidth = rouletteBlock.querySelector('.roulette-container').offsetWidth;
+        const targetShift = (winningIndex * cardWidth) - (containerWidth / 2) + (cardWidth / 2);
+
+        // Запускаем плавную анимацию прокрутки
+        rouletteTrack.style.transition = 'transform 4s cubic-bezier(0.1, 0.6, 0.1, 1)';
+        rouletteTrack.style.transform = `translateX(-${targetShift}px)`;
+
+        // Обработка окончания анимации
         setTimeout(() => {
-            canvas.style.backgroundColor = 'transparent';
-        }, 150);
+            // Добавляем выигранный предмет в инвентарь
+            inventory.push(winningSkin);
+            renderInventory();
+            
+            // Показываем кнопку закрытия рулетки
+            closeRouletteBtn.style.display = 'block';
+            isRolling = false;
+        }, 4000);
     }
+
+    // Кнопка закрытия окна рулетки
+    closeRouletteBtn.addEventListener('click', () => {
+        rouletteBlock.style.display = 'none';
+    });
+
+    // Запуск инициализации при загрузке страницы
+    init();
 </script>
 </body>
 </html>
